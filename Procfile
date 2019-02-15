@@ -1,2 +1,2 @@
 web: gunicorn try_dash:server
-clock: python clock.py
+# clock: python clock.py
