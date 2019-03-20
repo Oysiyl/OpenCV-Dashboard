@@ -9,3 +9,4 @@ APScheduler
 numpy
 flask
 pytesseract
+opencv-contrib-python
