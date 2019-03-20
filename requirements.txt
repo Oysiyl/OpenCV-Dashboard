@@ -9,4 +9,5 @@ APScheduler
 numpy
 flask
 pytesseract
-opencv-contrib-python
+imutils
+opencv-contrib-python-headless
