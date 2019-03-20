@@ -6,3 +6,6 @@ plotly
 gunicorn
 pyorbital
 APScheduler
+numpy
+flask
+pytesseract
