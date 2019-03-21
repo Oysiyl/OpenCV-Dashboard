@@ -17,6 +17,7 @@ import random
 from datetime import datetime
 import datetime
 
+'''
 UPLOAD_DIRECTORY = "/project/app_uploaded_files"
 
 if not os.path.exists(UPLOAD_DIRECTORY):
@@ -24,6 +25,7 @@ if not os.path.exists(UPLOAD_DIRECTORY):
 
 image_filename = UPLOAD_DIRECTORY + '/metro2.png'  # replace with your own image
 encoded_image = base64.b64encode(open(image_filename, 'rb').read())
+'''
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
