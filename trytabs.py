@@ -314,8 +314,8 @@ def render_content(tab):
      State('upload-image', 'last_modified')]
 )
 def update_output_div1(filename, blur_value, thresh_value, morph_value, list_of_contents, list_of_names, list_of_dates):
-    print(UPLOAD_DIRECTORY)
-    print(filename)
+    # print(UPLOAD_DIRECTORY)
+    # print(filename)
     '''
     if list_of_contents is not None:
         children = [
@@ -422,9 +422,9 @@ def update_output_div1(filename, blur_value, thresh_value, morph_value, list_of_
 )
 def update_output_div2(filename, second_value, third_value, first_value, list_of_contents):
     """Convert image to grayscale."""
-    print(UPLOAD_DIRECTORY)
-    print(filename)
-    print("123")
+    # print(UPLOAD_DIRECTORY)
+    # print(filename)
+    # print("123")
     # load the COCO class labels our Mask R-CNN was trained on
     labelsPath = "mask-rcnn-coco/object_detection_classes_coco.txt"
     LABELS = open(labelsPath).read().strip().split("\n")
@@ -574,9 +574,9 @@ def update_output_div2(filename, second_value, third_value, first_value, list_of
 )
 def update_output_div3(filename, second_value, third_value, first_value, list_of_contents):
     """Convert image to grayscale."""
-    print(UPLOAD_DIRECTORY)
-    print(filename)
-    print("321")
+    # print(UPLOAD_DIRECTORY)
+    # print(filename)
+    # print("321")
 
     """Convert image to grayscale."""
     # load the COCO class labels our YOLO model was trained on
