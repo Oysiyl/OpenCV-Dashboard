@@ -240,18 +240,31 @@ def render_content(tab):
                     html.H3('Tab content 5'),
                     html.Div(id='image-view'),
                     html.Label('Choose HSV'),
+                    dcc.RadioItems(
+                        id='forhsv',
+                        options=[
+                            {'label': 'Orange', 'value': [0, 22]},
+                            {'label': 'Yellow', 'value': [22, 38]},
+                            {'label': 'Green', 'value': [38, 75]},
+                            {'label': 'Blue', 'value': [75, 130]},
+                            {'label': 'Violet', 'value': [130, 160]},
+                            {'label': 'Red', 'value': [160, 179]},
+                            {'label': 'None', 'value': 1}
+                        ],
+                        value=1
+                    ),
                     html.Label('H1'),
-                    dcc.Input(id='h1', type='int', value=1, placeholder='Choose H'),
+                    dcc.Input(id='h1', type='int', value=0, placeholder='Choose H'),
                     html.Label('S1'),
-                    dcc.Input(id='s1', type='int', value=1, placeholder='Choose S'),
+                    dcc.Input(id='s1', type='int', value=50, placeholder='Choose S'),
                     html.Label('V1'),
-                    dcc.Input(id='v1', type='int', value=1, placeholder='Choose V'),
+                    dcc.Input(id='v1', type='int', value=50, placeholder='Choose V'),
                     html.Label('H2'),
-                    dcc.Input(id='h2', type='int', value=1, placeholder='Choose H'),
+                    dcc.Input(id='h2', type='int', value=180, placeholder='Choose H'),
                     html.Label('S2'),
-                    dcc.Input(id='s2', type='int', value=1, placeholder='Choose S'),
+                    dcc.Input(id='s2', type='int', value=255, placeholder='Choose S'),
                     html.Label('V2'),
-                    dcc.Input(id='v2', type='int', value=1, placeholder='Choose V'),
+                    dcc.Input(id='v2', type='int', value=255, placeholder='Choose V'),
                     html.Label('Blur'),
                     dcc.RadioItems(
                         id='blur',
@@ -301,15 +314,16 @@ def render_content(tab):
 def update_output_div1(filename, blur_value, thresh_value, morph_value, list_of_contents, list_of_names, list_of_dates):
     print(UPLOAD_DIRECTORY)
     print(filename)
+    '''
     if list_of_contents is not None:
         children = [
             parse_contents(c, n, d) for c, n, d in
             zip(list_of_contents, list_of_names, list_of_dates)]
     else:
         children = []
+    '''
     # print("Image: {}".format(children))
-    data = list_of_contents[-1].encode("utf8").split(b";base64,")[1]
-
+    '''
     # with open(os.path.join(UPLOAD_DIRECTORY, list_of_names[0]), "wb") as fp:
     #     fp.write(base64.decodebytes(data))
     filename = list_of_names[-1]
@@ -319,6 +333,13 @@ def update_output_div1(filename, blur_value, thresh_value, morph_value, list_of_
 
     # gray = cv2.cvtColor(image_filename, cv2.COLOR_BGR2GRAY)
     gray = cv2.imread(filename, 0)
+    '''
+    if list_of_contents is None:
+        return html.Img(id='image')
+    data = list_of_contents[-1].encode("utf8").split(b";base64,")[1]
+    nparr = np.fromstring(base64.b64decode(data), np.uint8)
+    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     # gray = cv2.imread(, 0)
     kernel = np.ones((5, 5), np.uint8)
     if blur_value == '2':
@@ -373,15 +394,19 @@ def update_output_div1(filename, blur_value, thresh_value, morph_value, list_of_
 
     # write the grayscale image to disk as a temporary file so we can
     # apply OCR to it
-    filename = "{}.png".format(os.getpid())
-    cv2.imwrite(filename, gray)
+    # filename = "{}.png".format(os.getpid())
+    # cv2.imwrite(filename, gray)
     # load the image as a PIL/Pillow image, apply OCR, and then delete
     # the temporary file
     # text = pytesseract.image_to_string(Image.open(filename))
+    buffer = cv2.imencode('.jpg', gray)[1]
 
+    encoded_image = base64.b64encode(buffer)
     # print(text)
-    encoded_image = base64.b64encode(open(filename, 'rb').read())
-    os.remove(filename)
+    # encoded_image = base64.b64encode(open(filename, 'rb').read())
+    # os.remove(filename)
+
+    # encoded_image = base64.b64encode(gray)
     gc.collect()
     return html.Img(id='image', src='data:image/png;base64,{}'.format(
                                                encoded_image.decode()))
@@ -390,9 +415,10 @@ def update_output_div1(filename, blur_value, thresh_value, morph_value, list_of_
 @app.callback(
     Output(component_id='my-div-2', component_property='children'),
     [Input('upload-data', 'filename'), Input('first-slider', 'value'),
-     Input('second-slider', 'value'), Input('class-selector', 'value')]
+     Input('second-slider', 'value'), Input('class-selector', 'value'),
+     Input('upload-image', 'contents')]
 )
-def update_output_div2(filename, second_value, third_value, first_value):
+def update_output_div2(filename, second_value, third_value, first_value, list_of_contents):
     """Convert image to grayscale."""
     print(UPLOAD_DIRECTORY)
     print(filename)
@@ -419,10 +445,20 @@ def update_output_div2(filename, second_value, third_value, first_value):
 
     # load our input image and grab its spatial dimensions
     # load the example image and convert it to grayscale
+    '''
     image_filename = UPLOAD_DIRECTORY + "/" + filename  # replace with your own image
     encoded_image = base64.b64encode(open(image_filename, 'rb').read())
     image = cv2.imread(encoded_image.decode())
     image = cv2.imread(image_filename)
+    '''
+    if list_of_contents is None:
+        return html.Img(id='image')
+    data = list_of_contents[-1].encode("utf8").split(b";base64,")[1]
+    nparr = np.fromstring(base64.b64decode(data), np.uint8)
+    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    image = cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
+    image = img
     # image = cv2.imread(args["image"])
     (H, W) = image.shape[:2]
 
@@ -510,30 +546,36 @@ def update_output_div2(filename, second_value, third_value, first_value):
             cv2.putText(clone, text, (startX, startY - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
             # write the grayscale image to disk as a temporary file so we can
             # apply OCR to it
-            filename = "{}.png".format(os.getpid())
-            cv2.imwrite(filename, clone)
+            # filename = "{}.png".format(os.getpid())
+            # cv2.imwrite(filename, clone)
             # load the image as a PIL/Pillow image, apply OCR, and then delete
             # the temporary file
             # text = pytesseract.image_to_string(Image.open(filename))
+            buffer = cv2.imencode('.jpg', clone)[1]
+        else:
+            buffer = cv2.imencode('.jpg', image)[1]
 
-            # print(text)
-            encoded_image = base64.b64encode(open(filename, 'rb').read())
-            os.remove(filename)
-            gc.collect()
-            return html.Img(id='image', src='data:image/png;base64,{}'.format(
-                                                       encoded_image.decode()))
+        encoded_image = base64.b64encode(buffer)
+        # print(text)
+        # encoded_image = base64.b64encode(open(filename, 'rb').read())
+        # os.remove(filename)
+        gc.collect()
+        return html.Img(id='image', src='data:image/png;base64,{}'.format(
+                                                   encoded_image.decode()))
 
 
 @app.callback(
     Output(component_id='my-div-3', component_property='children'),
     [Input('upload-data', 'filename'), Input('first-slider', 'value'),
-     Input('second-slider', 'value'), Input('class-selector', 'value')]
+     Input('second-slider', 'value'), Input('class-selector', 'value'),
+     Input('upload-image', 'contents')]
 )
-def update_output_div3(filename, second_value, third_value, first_value):
+def update_output_div3(filename, second_value, third_value, first_value, list_of_contents):
     """Convert image to grayscale."""
     print(UPLOAD_DIRECTORY)
     print(filename)
     print("321")
+
     """Convert image to grayscale."""
     # load the COCO class labels our YOLO model was trained on
     labelsPath = "yolo-coco/coco.names"
@@ -552,10 +594,20 @@ def update_output_div3(filename, second_value, third_value, first_value):
     net = cv2.dnn.readNetFromDarknet(configPath, weightsPath)
 
     # load our input image and grab its spatial dimensions
+    '''
     image_filename = UPLOAD_DIRECTORY + "/" + filename  # replace with your own image
     encoded_image = base64.b64encode(open(image_filename, 'rb').read())
     image = cv2.imread(encoded_image.decode())
     image = cv2.imread(image_filename)
+    '''
+    if list_of_contents is None:
+        return html.Img(id='image')
+    data = list_of_contents[-1].encode("utf8").split(b";base64,")[1]
+    nparr = np.fromstring(base64.b64decode(data), np.uint8)
+    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    image = cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
+    image = img
     # image = cv2.imread(args["image"])
     # image = cv2.imread(args["image"])
     (H, W) = image.shape[:2]
@@ -663,15 +715,17 @@ def update_output_div3(filename, second_value, third_value, first_value):
     cv2.putText(image, text, (0, 50), cv2.FONT_HERSHEY_SIMPLEX, 2.0, (0, 255, 0), 3)
     # write the grayscale image to disk as a temporary file so we can
     # apply OCR to it
-    filename = "{}.png".format(os.getpid())
-    cv2.imwrite(filename, image)
+    # filename = "{}.png".format(os.getpid())
+    # cv2.imwrite(filename, image)
     # load the image as a PIL/Pillow image, apply OCR, and then delete
     # the temporary file
     # text = pytesseract.image_to_string(Image.open(filename))
+    buffer = cv2.imencode('.jpg', image)[1]
 
+    encoded_image = base64.b64encode(buffer)
     # print(text)
-    encoded_image = base64.b64encode(open(filename, 'rb').read())
-    os.remove(filename)
+    # encoded_image = base64.b64encode(open(filename, 'rb').read())
+    # os.remove(filename)
     gc.collect()
     return html.Img(id='image', src='data:image/png;base64,{}'.format(
                                                encoded_image.decode()))
@@ -680,22 +734,32 @@ def update_output_div3(filename, second_value, third_value, first_value):
 @app.callback(
     Output(component_id='my-div-4', component_property='children'),
     [Input('upload-data', 'filename'), Input('first-slider', 'value'),
-     Input('second-slider', 'value'), Input('class-selector', 'value')]
+     Input('second-slider', 'value'), Input('class-selector', 'value'),
+     Input('upload-image', 'contents')]
 )
 '''
-def update_output_text(filename, first_value, second_value, thresh, resize):
+def update_output_text(filename, first_value, second_value, thresh, resize, list_of_contents):
     """Convert image to grayscale."""
     # load the example image and convert it to grayscale
+    '''
     print(UPLOAD_DIRECTORY)
     print(filename)
     image_filename = UPLOAD_DIRECTORY + "/" + filename  # replace with your own image
     encoded_image = base64.b64encode(open(image_filename, 'rb').read())
     image = cv2.imread(encoded_image.decode())
+    '''
+    if list_of_contents is None:
+        return html.Img(id='image')
+    data = list_of_contents[-1].encode("utf8").split(b";base64,")[1]
+    nparr = np.fromstring(base64.b64decode(data), np.uint8)
+    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    # image = cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
     # Resize to 2x
 
     # gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     # gray = cv2.cvtColor(image_filename, cv2.COLOR_BGR2GRAY)
-    gray = cv2.imread(image_filename, 0)
+    # gray = cv2.imread(image_filename, 0)
     if resize != 1.0:
         gray = cv2.resize(gray, None,
                           fx=float(resize), fy=float(resize),
@@ -754,14 +818,14 @@ def update_output_text(filename, first_value, second_value, thresh, resize):
 
     # write the grayscale image to disk as a temporary file so we can
     # apply OCR to it
-    filename = "{}.png".format(os.getpid())
-    cv2.imwrite(filename, gray)
+    # filename = "{}.png".format(os.getpid())
+    # cv2.imwrite(filename, gray)
     # load the image as a PIL/Pillow image, apply OCR, and then delete
     # the temporary file
     # text = pytesseract.image_to_string(Image.open(filename))
     text = pytesseract.image_to_string(gray)
-    encoded_image = base64.b64encode(open(filename, 'rb').read())
-    os.remove(filename)
+    # encoded_image = base64.b64encode(open(filename, 'rb').read())
+    # os.remove(filename)
     gc.collect()
     return text
 
@@ -771,87 +835,99 @@ def update_output_text(filename, first_value, second_value, thresh, resize):
                Input('blur', 'value'),
                Input('morph', 'value'),
                Input('thresh', 'value'),
-               Input('resize', 'value')])
-def update_output_div4(filename, first_value, second_value, thresh, resize):
+               Input('resize', 'value'),
+               Input('upload-image', 'contents')])
+def update_output_div4(filename, blur_value, morph_value, thresh_value, resize, list_of_contents):
     """Convert image to grayscale."""
     # load the example image and convert it to grayscale
+    '''
     print(UPLOAD_DIRECTORY)
     print(filename)
     image_filename = UPLOAD_DIRECTORY + "/" + filename  # replace with your own image
     encoded_image = base64.b64encode(open(image_filename, 'rb').read())
     image = cv2.imread(encoded_image.decode())
+    '''
+    if list_of_contents is None:
+        return html.Img(id='image')
+    data = list_of_contents[-1].encode("utf8").split(b";base64,")[1]
+    nparr = np.fromstring(base64.b64decode(data), np.uint8)
+    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    # image = cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
     # Resize to 2x
 
     # gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     # gray = cv2.cvtColor(image_filename, cv2.COLOR_BGR2GRAY)
-    gray = cv2.imread(image_filename, 0)
+    # gray = cv2.imread(image_filename, 0)
     if resize != 1.0:
         gray = cv2.resize(gray, None,
                           fx=float(resize), fy=float(resize),
                           interpolation=cv2.INTER_CUBIC)
     kernel = np.ones((5, 5), np.uint8)
-    if first_value == '2':
+    if blur_value == '2':
         gray = cv2.medianBlur(gray, 3)
-    if first_value == '4':
+    if blur_value == '4':
         gray = cv2.blur(gray, (5, 5))
-    if first_value == '1':
+    if blur_value == '1':
         gray = cv2.GaussianBlur(gray, (5, 5), 0)
-    if first_value == '3':
+    if blur_value == '3':
         gray = cv2.bilateralFilter(gray, 9, 75, 75)
-    if first_value == '5':
+    if blur_value == '5':
         gray = gray
     # check to see if we should apply thresholding to preprocess the
     # image
-    if thresh == 1:
-        gray = cv2.threshold(gray, 0, 255,
-                             cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
-    if thresh == 2:
+    if thresh_value == 1:
+        gray = gray
+    if thresh_value == 2:
         gray = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY)[1]
-    if thresh == 3:
+    if thresh_value == 3:
         gray = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV)[1]
-    if thresh == 4:
+    if thresh_value == 4:
         gray = cv2.threshold(gray, 0, 255, cv2.THRESH_TRUNC)[1]
-    if thresh == 5:
+    if thresh_value == 5:
         gray = cv2.threshold(gray, 0, 255, cv2.THRESH_TOZERO)[1]
-    if thresh == 6:
+    if thresh_value == 6:
         gray = cv2.threshold(gray, 0, 255, cv2.THRESH_TOZERO_INV)[1]
-    if thresh == 7:
+        # print(text)
+    if thresh_value == 7:
         gray = cv2.adaptiveThreshold(gray, 255,
                                      cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
                                      cv2.THRESH_BINARY, 115, 1)
-    if thresh == 8:
+    if thresh_value == 8:
         gray = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
                                      cv2.THRESH_BINARY, 115, 1)
-    if thresh == 9:
+    if thresh_value == 9:
         gray = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
                                      cv2.THRESH_BINARY, 11, 2)
-    if thresh == 10:
+    if thresh_value == 10:
         # gray = cv2.GaussianBlur(gray, (5, 5), 0)
         gray = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
 
-    if second_value == '1':
+    if morph_value == '1':
         gray = cv2.erode(gray, kernel, iterations=1)
-    if second_value == '2':
+    if morph_value == '2':
         gray = cv2.dilate(gray, kernel, iterations=1)
-    if second_value == '3':
+    if morph_value == '3':
         gray = cv2.morphologyEx(gray, cv2.MORPH_OPEN, kernel)
-    if second_value == '4':
+    if morph_value == '4':
         gray = cv2.morphologyEx(gray, cv2.MORPH_CLOSE, kernel)
-    if second_value == '5':
+    if morph_value == '5':
         gray = gray
 
 
     # write the grayscale image to disk as a temporary file so we can
     # apply OCR to it
-    filename = "{}.png".format(os.getpid())
-    cv2.imwrite(filename, gray)
+    # filename = "{}.png".format(os.getpid())
+    # cv2.imwrite(filename, gray)
     # load the image as a PIL/Pillow image, apply OCR, and then delete
     # the temporary file
     # text = pytesseract.image_to_string(Image.open(filename))
+    buffer = cv2.imencode('.jpg', gray)[1]
 
+    encoded_image = base64.b64encode(buffer)
     # print(text)
-    encoded_image = base64.b64encode(open(filename, 'rb').read())
-    os.remove(filename)
+    # encoded_image = base64.b64encode(open(filename, 'rb').read())
+    # os.remove(filename)
     gc.collect()
     return html.Img(id='image', src='data:image/png;base64,{}'.format(
                                                encoded_image.decode()))
@@ -862,16 +938,27 @@ def update_output_div4(filename, first_value, second_value, thresh, resize):
     [Input('upload-data', 'filename'), Input('blur', 'value'),
      Input('thresh', 'value'), Input('morph', 'value'),
      Input('h1', 'value'), Input('s1', 'value'), Input('v1', 'value'),
-     Input('h2', 'value'), Input('s2', 'value'), Input('v2', 'value')]
+     Input('h2', 'value'), Input('s2', 'value'), Input('v2', 'value'),
+     Input('upload-image', 'contents'), Input('forhsv', 'options'), Input('forhsv', 'value')]
 )
 def update_output_div5(filename, blur_value, thresh_value, morph_value,
-                       h1, s1, v1, h2, s2, v2):
+                       h1, s1, v1, h2, s2, v2, list_of_contents, forhsv, value):
+    '''
     print(UPLOAD_DIRECTORY)
     print(filename)
     image_filename = UPLOAD_DIRECTORY + "/" + filename  # replace with your own image
     encoded_image = base64.b64encode(open(image_filename, 'rb').read())
     image = cv2.imread(encoded_image.decode())
     frame = cv2.imread(filename)
+    '''
+    if list_of_contents is None:
+        return html.Img(id='image')
+    data = list_of_contents[-1].encode("utf8").split(b";base64,")[1]
+    nparr = np.fromstring(base64.b64decode(data), np.uint8)
+    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    frame = cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
+    frame = img
     # gray = cv2.cvtColor(image_filename, cv2.COLOR_BGR2GRAY)
     # frame = cv2.imread(image_filename)
     # Convert BGR to HSV
@@ -879,10 +966,24 @@ def update_output_div5(filename, blur_value, thresh_value, morph_value,
     # define range of blue color in HSV
     lower_blue = np.array([h1, s1, v1])
     upper_blue = np.array([h2, s2, v2])
-    lower_blue = np.array([110, 50, 50])
-    upper_blue = np.array([130, 255, 255])
+    if value is not 1:
+        limits = value
+        # print(value)
+        h1, h2 = limits[0], limits[1]
+    '''
+    for i in forhsv:
+        print(i.get('label'))
+        if i.get('value') == value:
+            limits = i.get('value')
+            break
+    '''
+
+    lower_blue = np.array([h1, s1, v1])
+    upper_blue = np.array([h2, s2, v2])
+    # lower_blue = np.array([110, 50, 50])
+    # upper_blue = np.array([130, 255, 255])
     # Threshold the HSV image to get only blue colors
-    mask = cv2.inRange(np.array(hsv), lower_blue, upper_blue)
+    mask = cv2.inRange(hsv, lower_blue, upper_blue)
 
     # Bitwise-AND mask and original image
     res = cv2.bitwise_and(frame, frame, mask=mask)
@@ -941,15 +1042,19 @@ def update_output_div5(filename, blur_value, thresh_value, morph_value,
 
     # write the grayscale image to disk as a temporary file so we can
     # apply OCR to it
-    filename = "{}.png".format(os.getpid())
-    cv2.imwrite(filename, gray)
+    # filename = "{}.png".format(os.getpid())
+    # cv2.imwrite(filename, gray)
     # load the image as a PIL/Pillow image, apply OCR, and then delete
     # the temporary file
     # text = pytesseract.image_to_string(Image.open(filename))
 
     # print(text)
-    encoded_image = base64.b64encode(open(filename, 'rb').read())
-    os.remove(filename)
+    # encoded_image = base64.b64encode(open(filename, 'rb').read())
+    # Convert captured image to JPG
+    buffer = cv2.imencode('.jpg', gray)[1]
+
+    encoded_image = base64.b64encode(buffer)
+    # os.remove(filename)
     gc.collect()
     return html.Img(id='image', src='data:image/png;base64,{}'.format(
                                                encoded_image.decode()))
@@ -959,7 +1064,7 @@ def only_image(contents):
     gc.collect()
     return html.Img(id='image', src=contents)
 
-
+'''
 def save_file(name, content):
     """Decode and store a file uploaded with Plotly Dash."""
     print("Name".format(name))
@@ -967,8 +1072,8 @@ def save_file(name, content):
     data = content.encode("utf8").split(b";base64,")[1]
     with open(os.path.join(UPLOAD_DIRECTORY, name), "wb") as fp:
         fp.write(base64.decodebytes(data))
-
-
+'''
+'''
 def uploaded_files():
     """List the files in the upload directory."""
     files = []
@@ -977,14 +1082,14 @@ def uploaded_files():
         if os.path.isfile(path):
             files.append(filename)
     return files
-
-
+'''
+'''
 def file_download_link(filename):
     """Create a Plotly Dash 'A' element that downloads a file from the app."""
     location = "/download/{}".format(urlquote(filename))
     return html.A(filename, href=location)
-
-
+'''
+'''
 @app.callback(
     Output("file-list", "children"),
     [Input("upload-image", "filename"), Input("upload-image", "contents")],
@@ -996,13 +1101,14 @@ def update_output(uploaded_filenames, uploaded_file_contents):
         for name, data in zip(uploaded_filenames, uploaded_file_contents):
             print("Name here: ".format(name))
             print("Data here: ".format(data))
-            save_file(name, data)
+            # save_file(name, data)
 
     files = uploaded_files()
     if len(files) == 0:
         return [html.Li("No files yet!")]
     else:
         return [html.Li(file_download_link(filename)) for filename in files]
+'''
 
 
 def parse_contents(contents, filename, date):
@@ -1039,9 +1145,12 @@ def update_output(list_of_contents, list_of_names, list_of_dates):
                Input('blur', 'value'),
                Input('morph', 'value'),
                Input('thresh', 'value'),
-               Input('resize', 'value')])
-def calc_ocr(filename, first, second, thresh, resize):
-    return 'You\'ve entered "{}"'.format(update_output_text(filename, first, second, thresh, resize))
+               Input('resize', 'value'),
+               Input('upload-image', 'contents')])
+def calc_ocr(filename, blur_value, morph_value, thresh_value, resize, list_of_contents):
+    return 'You\'ve entered "{}"'.format(update_output_text(
+        filename, blur_value, morph_value,
+        thresh_value, resize, list_of_contents))
 
 
 if __name__ == '__main__':

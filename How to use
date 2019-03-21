@@ -9,3 +9,6 @@ git push heroku master
 heroku logs --tail
 heroku open
 heroku ps -a my-dash-app-3
+
+https://stackoverflow.com/questions/33754935/read-a-base-64-encoded-image-from-memory-using-opencv-python-library
+https://stackoverflow.com/questions/40928205/python-opencv-image-to-byte-string-for-json-transfer
