@@ -1,3 +1,7 @@
 *.pyc
 .DS_Store
 .env
+dashplot.py
+clock.py
+try_dash.py
+upload.py
