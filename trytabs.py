@@ -22,13 +22,6 @@ external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 server = Flask(__name__)
 app = dash.Dash(server=server, external_stylesheets=external_stylesheets)
 
-'''
-@server.route("/download/<path:path>")
-def download(path):
-    """Serve a file from the upload directory."""
-    return send_from_directory(UPLOAD_DIRECTORY, path, as_attachment=True)
-'''
-
 app.config['suppress_callback_exceptions'] = True
 app.scripts.config.serve_locally = True
 
@@ -61,15 +54,14 @@ app.layout = html.Div([
         dcc.Tab(label='Tab Five: HSV example', value='tab-5-example')
     ]),
     html.Div(id='output-image-upload'),
-    html.Div(id='tabs-content-example'),
-    # html.Div(id='all-in-one-img'),
-    # html.H2("File List"),
+    html.Div(id='tabs-content-example')
 ])
 
 
 @app.callback(Output('tabs-content-example', 'children'),
               [Input('tabs-example', 'value')])
 def render_content(tab):
+    """Fill out each of the tabs."""
     if tab == 'tab-1-example':
         return html.Div([
                 html.H3('Tab content 1'),
@@ -314,6 +306,7 @@ def render_content(tab):
 )
 def update_output_div1(filename, blur_value, thresh_value,
                        morph_value, list_of_contents):
+    """Render image for first tab."""
 
     if list_of_contents is None:
         return html.Img(id='image')
@@ -321,8 +314,8 @@ def update_output_div1(filename, blur_value, thresh_value,
     nparr = np.fromstring(base64.b64decode(data), np.uint8)
     img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    # gray = cv2.imread(, 0)
     kernel = np.ones((5, 5), np.uint8)
+
     if blur_value == '1':
         gray = cv2.GaussianBlur(gray, (5, 5), 0)
     if blur_value == '2':
@@ -358,7 +351,8 @@ def update_output_div1(filename, blur_value, thresh_value,
         gray = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
                                      cv2.THRESH_BINARY, 11, 2)
     if thresh_value == '10':
-        gray = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
+        gray = cv2.threshold(gray, 0, 255,
+                             cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
 
     if morph_value == '1':
         gray = cv2.erode(gray, kernel, iterations=1)
@@ -388,7 +382,7 @@ def update_output_div1(filename, blur_value, thresh_value,
 )
 def update_output_div2(filename, second_value, third_value,
                        first_value, list_of_contents):
-    """Convert image to grayscale."""
+    """Rendder image for second tab."""
 
     # load the COCO class labels our Mask R-CNN was trained on
     labelsPath = "mask-rcnn-coco/object_detection_classes_coco.txt"
@@ -473,8 +467,8 @@ def update_output_div2(filename, second_value, third_value,
 
             # convert the mask from a boolean to an integer mask with
             # to values: 0 or 255, then apply the mask
-            visMask = (mask * 255).astype("uint8")
-            instance = cv2.bitwise_and(roi, roi, mask=visMask)
+            # visMask = (mask * 255).astype("uint8")
+            # instance = cv2.bitwise_and(roi, roi, mask=visMask)
 
             # show the extracted ROI, the mask, along with the
             # segmented instance
@@ -521,8 +515,9 @@ def update_output_div2(filename, second_value, third_value,
      Input('second-slider', 'value'), Input('class-selector', 'value'),
      Input('upload-image', 'contents')]
 )
-def update_output_div3(filename, second_value, third_value, first_value, list_of_contents):
-    """Convert image to grayscale."""
+def update_output_div3(filename, second_value,
+                       third_value, first_value, list_of_contents):
+    """Render image for third tab."""
 
     # load the COCO class labels our YOLO model was trained on
     labelsPath = "yolo-coco/coco.names"
@@ -556,7 +551,8 @@ def update_output_div3(filename, second_value, third_value, first_value, list_of
     # construct a blob from the input image and then perform a forward
     # pass of the YOLO object detector, giving us our bounding boxes and
     # associated probabilities
-    blob = cv2.dnn.blobFromImage(image, 1 / 255.0, (416, 416), swapRB=True, crop=False)
+    blob = cv2.dnn.blobFromImage(image, 1 / 255.0,
+                                 (416, 416), swapRB=True, crop=False)
     net.setInput(blob)
     start = time.time()
     layerOutputs = net.forward(ln)
@@ -579,7 +575,6 @@ def update_output_div3(filename, second_value, third_value, first_value, list_of
             # the current object detection
             scores = detection[5:]
             classID = np.argmax(scores)
-            # print(classID)
             confidence = scores[classID]
             if first_value is None:
                 first_value = LABELS
@@ -613,7 +608,8 @@ def update_output_div3(filename, second_value, third_value, first_value, list_of
     # from our camera, then find the paper marker in the image, and initialize
     # the focal length
 
-    # Give the configuration and weight files for the model and load the network using them.
+    # Give the configuration and weight files for the model
+    #  and load the network using them.
     modelConfiguration = "yolo-coco/yolov3.cfg"
     modelWeights = "yolo-coco/yolov3.weights"
 
@@ -621,7 +617,6 @@ def update_output_div3(filename, second_value, third_value, first_value, list_of
 
     known_width = 0.6
     known_height = 1.8
-    known_distance = 1.0
     focal_length = 346.0
 
     # ensure at least one detection exists
@@ -633,8 +628,6 @@ def update_output_div3(filename, second_value, third_value, first_value, list_of
             (w, h) = (boxes[i][2], boxes[i][3])
             new_width = w
             new_height = h
-            new_distance = (new_width*focal_length)/known_width
-            area = w*h
             meters = (((known_width*focal_length)/new_width) +
                       ((known_height*focal_length)/new_height))/2
 
@@ -661,7 +654,8 @@ def update_output_div3(filename, second_value, third_value, first_value, list_of
 
 def update_output_text(filename, first_value, second_value,
                        thresh, resize, list_of_contents):
-    """Convert image to grayscale."""
+    """Render text from OCR, applied to image."""
+
     if list_of_contents is None:
         return html.Img(id='image')
     data = list_of_contents[-1].encode("utf8").split(b";base64,")[1]
@@ -740,27 +734,16 @@ def update_output_text(filename, first_value, second_value,
                Input('upload-image', 'contents')])
 def update_output_div4(filename, blur_value, morph_value, thresh_value,
                        resize, list_of_contents):
-    """Convert image to grayscale."""
-    # load the example image and convert it to grayscale
-    '''
-    print(UPLOAD_DIRECTORY)
-    print(filename)
-    image_filename = UPLOAD_DIRECTORY + "/" + filename  # replace with your own image
-    encoded_image = base64.b64encode(open(image_filename, 'rb').read())
-    image = cv2.imread(encoded_image.decode())
-    '''
+    """Render image for fourth tab."""
+
     if list_of_contents is None:
         return html.Img(id='image')
     data = list_of_contents[-1].encode("utf8").split(b";base64,")[1]
     nparr = np.fromstring(base64.b64decode(data), np.uint8)
     img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    # image = cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
-    # Resize to 2x
 
-    # gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    # gray = cv2.cvtColor(image_filename, cv2.COLOR_BGR2GRAY)
-    # gray = cv2.imread(image_filename, 0)
+    # Resize to selected by user's value
     if resize != 1.0:
         gray = cv2.resize(gray, None,
                           fx=float(resize), fy=float(resize),
@@ -833,7 +816,7 @@ def update_output_div4(filename, blur_value, morph_value, thresh_value,
 )
 def update_output_div5(filename, blur_value, thresh_value, morph_value,
                        h1, s1, v1, h2, s2, v2, list_of_contents, value):
-
+    """Render image for fifth tab."""
     if list_of_contents is None:
         return html.Img(id='image')
     data = list_of_contents[-1].encode("utf8").split(b";base64,")[1]
@@ -841,24 +824,21 @@ def update_output_div5(filename, blur_value, thresh_value, morph_value,
     frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
     # Convert BGR to HSV
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-    # define range of blue color in HSV
+    # define range of color in HSV
     lower_blue = np.array([h1, s1, v1])
     upper_blue = np.array([h2, s2, v2])
     if value is not 1:
         limits = value
-        # print(value)
         h1, h2 = limits[0], limits[1]
 
     lower_blue = np.array([h1, s1, v1])
     upper_blue = np.array([h2, s2, v2])
-    # lower_blue = np.array([110, 50, 50])
-    # upper_blue = np.array([130, 255, 255])
+
     # Threshold the HSV image to get only blue colors
     mask = cv2.inRange(hsv, lower_blue, upper_blue)
 
     # Bitwise-AND mask and original image
-    res = cv2.bitwise_and(frame, frame, mask=mask)
-    gray = res
+    gray = cv2.bitwise_and(frame, frame, mask=mask)
 
     kernel = np.ones((5, 5), np.uint8)
     if blur_value == '1':
@@ -896,7 +876,6 @@ def update_output_div5(filename, blur_value, thresh_value, morph_value,
         gray = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
                                      cv2.THRESH_BINARY, 11, 2)
     if thresh_value == '10':
-        # gray = cv2.GaussianBlur(gray, (5, 5), 0)
         gray = cv2.threshold(gray, 0, 255,
                              cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
 
@@ -915,7 +894,6 @@ def update_output_div5(filename, blur_value, thresh_value, morph_value,
     buffer = cv2.imencode('.jpg', gray)[1]
 
     encoded_image = base64.b64encode(buffer)
-    # os.remove(filename)
     gc.collect()
     return html.Img(id='image', src='data:image/png;base64,{}'.format(
                                                encoded_image.decode()))
@@ -927,6 +905,7 @@ def only_image(contents):
 
 
 def parse_contents(contents, filename, date):
+    """Give appropriate file data from choosed by user's file."""
     return html.Div([
         html.H5(filename),
         html.H6(datetime.datetime.fromtimestamp(date)),
@@ -947,6 +926,7 @@ def parse_contents(contents, filename, date):
               [State('upload-image', 'filename'),
                State('upload-image', 'last_modified')])
 def update_output(list_of_contents, list_of_names, list_of_dates):
+    """Function allows operate on choosed by user's file."""
     if list_of_contents is not None:
         children = [
             parse_contents(c, n, d) for c, n, d in
@@ -963,6 +943,7 @@ def update_output(list_of_contents, list_of_names, list_of_dates):
                Input('upload-image', 'contents')])
 def calc_ocr(filename, blur_value, morph_value, thresh_value,
              resize, list_of_contents):
+    """Return text, which are recognized on image."""
     return 'You\'ve entered "{}"'.format(update_output_text(
         filename, blur_value, morph_value,
         thresh_value, resize, list_of_contents))
